@@ -61,6 +61,8 @@ using Microsoft.Office.Interop.Word;
         string[] labels = new string[] { null, "дисциплина", "специальность", "курс", "ЛЕК", "ЛАБ", "ПРА", "ЭКЗ", "ЗАЧ", "К.ПР", "К.Р", "КОНС" };
         Console.WriteLine("Извлекаю данные из Excel файла...");
         int labelCounter = 0;
+        string autumnLiteral = "о";
+        string springLiteral = "в";
         List<string> AddInfo(string cell)
         {
             List<string> values = new List<string>();
@@ -142,7 +144,7 @@ using Microsoft.Office.Interop.Word;
                             i++;
                             counter++;
                         }
-                        i--; 
+                        i--;
                     }
                     else
                     {
@@ -201,7 +203,7 @@ using Microsoft.Office.Interop.Word;
             return values;
         }
         var semester = AddInfo("C");
-        if (semester.Contains("о") == false)
+        if (semester.Contains(autumnLiteral) == false)
         {
             excelAppWorkbooks.Close(false, System.Reflection.Missing.Value, System.Reflection.Missing.Value);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(excelSheets);
@@ -212,7 +214,7 @@ using Microsoft.Office.Interop.Word;
         List<int> whereIsSpring = new List<int>();
         for (int i = 0; i < semester.Count; i++)
         {
-            if (semester[i] != "о")
+            if (semester[i] != autumnLiteral)
             {
                 whereIsSpring.Add(i);
             }
@@ -244,97 +246,87 @@ using Microsoft.Office.Interop.Word;
         KillExcel();
 
         var groups = GroupsFromNumbersToLetters(groupsNumbers);
-        List<string> result = new List<string>();
         List<string> subjectsIncapsulated = new List<string>(subjectNames);
         List<string> groupsIncapsulated = new List<string>(groups);
         List<string> unique = new List<string>();
 
         Console.WriteLine("Формирую строки для вывода в Word...");
-        int cntr = 0;
+
         foreach (var item in subjectNames)
         {
             if (unique.Contains(item.Trim()) == false)
             {
                 unique.Add(item.Trim());
-                result.Add($"{semester[cntr]}:{groups[cntr]}-{groupsCourse[cntr]}1:{subjectNames[cntr]}:" +
-                    $"{lectures[cntr]};{practice[cntr]};{lab[cntr]};{consult[cntr]};{credit[cntr]};{exam[cntr]};{courseWork[cntr]}:{cntr}");
-                groupsIncapsulated[cntr] = "";
-                subjectsIncapsulated[cntr] = "";
-                groupsCourse[cntr] = 0;
             }
-            cntr++;
         }
-        string SumAllHours(string[] hours, string[] newHours)
+        List<string> shapedRows = new List<string>();
+        string MakeResult(string subjectName)
         {
-            string tempHours = String.Empty;
-            for (int i = 0; i < hours.Length; i++)
+            double lectHA = 0;
+            double labHA = 0;
+            double practtHA = 0;
+            double examHA = 0;
+            double creditHA = 0;
+            double cwHA = 0;
+            double vkrHA = 0;
+            double consultHA = 0;
+            double lectHS = 0;
+            double labHS = 0;
+            double practtHS = 0;
+            double examHS = 0;
+            double creditHS = 0;
+            double cwHS = 0;
+            double vkrHS = 0;
+            double consultHS = 0;
+            List<string> groupsInResult = new List<string>();
+            List<double> coursesInResult = new List<double>();
+            //чета ошибка индексов
+            for (int i = 0; i < subjectNames.Count; i++)
             {
-                tempHours += $"{double.Parse(hours[i]) + double.Parse(newHours[i])};";
+                if (subjectNames[i] == subjectName)
+                {
+                    if (semester[i] == autumnLiteral)
+                    {
+                        lectHA += (lectures[i]);
+                        labHA += (lab[i]);
+                        practtHA += (practice[i]);
+                        examHA += (exam[i]);
+                        creditHA += (credit[i]);
+                        cwHA += (courseWork[i]);
+                        vkrHA += (vkr[i]);
+                        consultHA += (consult[i]);
+                    }
+                    if (semester[i] == springLiteral)
+                    {
+                        lectHS += (lectures[i]);
+                        labHS += (lab[i]);
+                        practtHS += (practice[i]);
+                        examHS += (exam[i]);
+                        creditHS += (credit[i]);
+                        cwHS += (courseWork[i]);
+                        vkrHS += (vkr[i]);
+                        consultHS += (consult[i]);
+                    }
+                    groupsInResult.Add(groups[i]);
+                    coursesInResult.Add(groupsCourse[i]);
+                    subjectNames[i] = "";
+                }
             }
-            tempHours = tempHours.Substring(0, tempHours.Length - 1);
-            return tempHours;
-        }
-        string[] hoursInSpring = new string[result.Count];
-        bool IsItInSpring(int probablySpringNumber)
-        {
-            bool flag = false;
-            foreach (var item in whereIsSpring)
+            List<string> groupsCoursesResult = new List<string>();
+            for (int i = 0; i < groupsInResult.Count; i++)
             {
-                if (item == probablySpringNumber) flag = true;
+                groupsCoursesResult.Add(groupsInResult[i] + "- 1" + coursesInResult[i].ToString());
             }
-            return flag;
+            var result = ($" {string.Join(',', groupsCoursesResult)} {subjectName} :" +
+                $"{lectHA};{practtHA};{labHA};{consultHA};{creditHA};{examHA};{cwHA}:" +
+                $"{lectHS};{practtHS};{labHS};{consultHS};{creditHS};{examHS};{cwHS}");
+            return result;
         }
-        for (int i = 0; i < hoursInSpring.Length; i++)
+        foreach (var item in unique)
         {
-            hoursInSpring[i] = "0;0;0;0;0;0;0";
+            shapedRows.Add(MakeResult(item));
         }
 
-        for (int i = 0; i < result.Count; i++)
-        {
-            var resultSeperate = result[i].Split(":");
-            int counter = 0;
-            for (int j = 0; j < subjectsIncapsulated.Count; j++)
-            {
-                string[] oldHours;
-                if (subjectsIncapsulated[j] != "")
-                {
-                    if (resultSeperate[2].Trim() == subjectsIncapsulated[j])
-                    {
-                        string temp = $"{lectures[j]};{practice[j]};{lab[j]};{consult[j]};{credit[j]};{exam[j]};{courseWork[j]}";
-                        var newHours = temp.Split(";");
-                        result[i] = result[i].Insert(1, $"{groups[j]}-{groupsCourse[j]}1,");
-                        if (semester[j] == "в")
-                        {
-                            oldHours = hoursInSpring[i].Split(';');
-                            hoursInSpring[i] = SumAllHours(oldHours, newHours);
-                        }
-                        else
-                        {
-                            oldHours = result[i].Split(':')[3].Split(';');
-                            var resultHours = SumAllHours(oldHours, newHours);
-                            result[i] = $"{result[i].Split(':')[1]}:{resultSeperate[2]}:{resultHours}";
-                        }
-                        subjectsIncapsulated[j] = "";
-                        counter++;
-                    }
-                }
-            }
-            if (IsItInSpring(int.Parse(resultSeperate[4])))
-            {
-                if (counter == 0)
-                {
-                    hoursInSpring[i] = resultSeperate[3];
-                }
-                var temp = result[i].Split(':');
-                result[i] = $"{temp[1]}:{temp[2]}:{temp[3]}";
-                result[i] += ":@";
-            }
-            else if (result[i].Split(':').Length == 4)
-            {
-                var temp = result[i].Split(':');
-                result[i] = $"{temp[1]}:{temp[2]}:{temp[3]}";
-            }
-        }
         Microsoft.Office.Interop.Word.Application word = new Microsoft.Office.Interop.Word.Application();
         word.Visible = false;
         object miss = System.Reflection.Missing.Value;
@@ -371,6 +363,7 @@ using Microsoft.Office.Interop.Word;
         double[] hoursResult = new double[8];
         double[] hoursFS = new double[8];
         double[] hoursSS = new double[8];
+
         Word.Range changeStyle(Word.Range wordCell)
         {
             wordCell.Bold = 0;
@@ -382,13 +375,13 @@ using Microsoft.Office.Interop.Word;
         {
             int counter = counterForCell;
             int skipedRowsCounter = 0;
-            for (int i = counter; i < result.Count + counter; i++)
+            for (int i = counter; i < shapedRows.Count + counter; i++)
             {
-                var splitedResult = result[i - counter].Split(':');
-                var hour = double.Parse(splitedResult[2].Split(';')[num]);
+                var splitedResult = shapedRows[i - counter].Split(':');
+                var hour = double.Parse(splitedResult[1].Split(';')[num]);
                 int column = 3;
                 bool isAdded = false;
-                if (hour != 0 && splitedResult.Length<4)
+                if (hour != 0)
                 {
                     changeStyle(wordCell);
                     wordCell.Font.Size = 10;
@@ -401,7 +394,7 @@ using Microsoft.Office.Interop.Word;
                     wordCell = table.Cell(i - skipedRowsCounter, 2).Range;
                     changeStyle(wordCell);
                     wordCell.Font.Size = 10;
-                    wordCell.Text = $"{splitedResult[0]} {splitedResult[1]}\r\a";
+                    wordCell.Text = $"{splitedResult[0]}\r\a";
                     wordCell = table.Cell(i - skipedRowsCounter, column).Range;
                     changeStyle(wordCell);
                     wordCell.Font.Size = 10;
@@ -414,7 +407,7 @@ using Microsoft.Office.Interop.Word;
                 {
                     skipedRowsCounter++;
                 }
-                if (hoursInSpring[i - counter].Split(';')[num] != "0")
+                if (splitedResult[2].Split(';')[num] != "0")
                 {
                     if (!isAdded)
                     {
@@ -429,10 +422,10 @@ using Microsoft.Office.Interop.Word;
                         wordCell = table.Cell(i - skipedRowsCounter, 2).Range;
                         changeStyle(wordCell);
                         wordCell.Font.Size = 10;
-                        wordCell.Text = $"{splitedResult[0]} {splitedResult[1]}\r\a";
+                        wordCell.Text = $"{splitedResult[0]}\r\a";
                         counterForCell++;
                     }
-                    hour = double.Parse(hoursInSpring[i - counter].Split(';')[num]);
+                    hour = double.Parse(splitedResult[2].Split(';')[num]);
                     column = 5;
                     wordCell = table.Cell(i - skipedRowsCounter, column).Range;
                     wordCell.Text = hour.ToString();
@@ -476,7 +469,7 @@ using Microsoft.Office.Interop.Word;
             int counterForVrk = 0;
             foreach (var item in vkr)
             {
-                if (item != 0 && counterForVrk < whereIsSpring[0])
+                if (!whereIsSpring.Contains(counterForVrk))
                 {
                     hoursFS[7] += item;
                 }
