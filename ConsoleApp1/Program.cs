@@ -280,7 +280,7 @@ using Microsoft.Office.Interop.Word;
             double consultHS = 0;
             List<string> groupsInResult = new List<string>();
             List<double> coursesInResult = new List<double>();
-            //чета ошибка индексов
+
             for (int i = 0; i < subjectNames.Count; i++)
             {
                 if (subjectNames[i] == subjectName)
