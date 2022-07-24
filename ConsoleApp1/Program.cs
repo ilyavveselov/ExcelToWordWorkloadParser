@@ -315,7 +315,7 @@ using Microsoft.Office.Interop.Word;
             List<string> groupsCoursesResult = new List<string>();
             for (int i = 0; i < groupsInResult.Count; i++)
             {
-                groupsCoursesResult.Add(groupsInResult[i] + "- 1" + coursesInResult[i].ToString());
+                groupsCoursesResult.Add(groupsInResult[i] + "-" +coursesInResult[i].ToString() + "1");
             }
             var result = ($" {string.Join(',', groupsCoursesResult)} {subjectName} :" +
                 $"{lectHA};{practtHA};{labHA};{consultHA};{creditHA};{examHA};{cwHA}:" +
